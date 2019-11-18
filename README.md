@@ -1,2 +1,39 @@
-# python_flocking
-A Mesa implementation of flocking agents inspired by https://doi.org/10.1109/IROS.2014.6943105.
+# Flocking
+A Mesa implementation of flocking agents. The agent behavior is inspired by https://doi.org/10.1109/IROS.2014.6943105. The implementation is based on the boid_flockers example of the [Mesa project](https://github.com/projectmesa/mesa).
+
+## Getting Started
+
+### Setup
+Create a virtual Python environment:
+```shell
+python3 -m venv python_flocking
+```
+Activate the virtual environment:
+```shell
+cd python_flocking
+source bin/activate
+```
+Get the source code:
+```shell
+git clone https://github.com/tropappar/python_flocking.git
+```
+Install requirements:
+```shell
+cd python_flocking
+pip install -r requirements.txt
+```
+
+### Run
+Switch to the folder containing the virtual environment and activate it:
+Activate the virtual environment:
+```shell
+cd python_flocking
+source bin/activate
+```
+
+Run Mesa in the virtual environment:
+```shell
+cd python_flocking
+mesa runserver
+```
+This opens the visualization in your default web browser.
