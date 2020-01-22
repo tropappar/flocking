@@ -15,11 +15,11 @@ source bin/activate
 ```
 Get the source code:
 ```shell
-git clone https://github.com/tropappar/python_flocking.git
+git clone https://github.com/tropappar/flocking.git
 ```
 Install requirements:
 ```shell
-cd python_flocking
+cd flocking
 pip install -r requirements.txt
 ```
 
@@ -32,7 +32,7 @@ source bin/activate
 
 Run Mesa in the virtual environment:
 ```shell
-cd python_flocking
+cd flocking
 mesa runserver
 ```
 This opens the visualization in your default web browser.
