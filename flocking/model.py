@@ -6,7 +6,7 @@ from mesa.space import ContinuousSpace
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 
-from .boid import Boid
+from .agent import Boid
 
 def minimum_distance(model):
     '''

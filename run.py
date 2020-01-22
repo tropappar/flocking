@@ -1,3 +1,3 @@
-from boid_flockers.server import server
+from flocking.server import server
 
 server.launch()
