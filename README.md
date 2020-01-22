@@ -6,11 +6,11 @@ A Mesa implementation of flocking agents. The agent behavior is inspired by http
 ### Setup
 Create a virtual Python environment:
 ```shell
-python3 -m venv python_flocking
+python3 -m venv mesa
 ```
 Activate the virtual environment:
 ```shell
-cd python_flocking
+cd mesa
 source bin/activate
 ```
 Get the source code:
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 ### Run
 Switch to the folder containing the virtual environment and activate it:
 ```shell
-cd flocking
+cd mesa
 source bin/activate
 ```
 
