@@ -26,7 +26,7 @@ pip install -r requirements.txt
 ### Run
 Switch to the folder containing the virtual environment and activate it:
 ```shell
-cd python_flocking
+cd flocking
 source bin/activate
 ```
 
