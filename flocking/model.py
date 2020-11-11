@@ -32,12 +32,24 @@ def collisions(model):
     '''
     return len([d for d in model.density if d < model.min_dist])
 
+def messages_distributed(model):
+    '''
+    Compute the number of messages exchanged in the network with distributed communication.
+    '''
+    return model.population
+
+def messages_centralized(model):
+    '''
+    Compute the number of messages exchanged in the network with centralized communication.
+    '''
+    return model.population + sum([2 for d in model.density if d <= model.vision])
+
 class BoidFlockers(Model):
     '''
     A Mesa implementation of flocking agents inspired by https://doi.org/10.1109/IROS.2014.6943105.
     '''
 
-    def __init__(self, population, width, height, vision, min_dist, flock_vel, accel_time, equi_dist, repulse_max, repulse_spring, align_frict, align_slope, align_min, wall_decay, wall_frict, wp_tolerance):
+    def __init__(self, formation, population, width, height, vision, min_dist, flock_vel, accel_time, equi_dist, repulse_max, repulse_spring, align_frict, align_slope, align_min, wall_decay, wall_frict, form_shape, form_track, form_decay, wp_tolerance):
         '''
         Create a new Flockers model.
 
@@ -52,10 +64,10 @@ class BoidFlockers(Model):
         self.space = ContinuousSpace(width, height, torus=False)
         self.vision = vision
         self.min_dist = min_dist
-        self.params = dict(flock_vel=flock_vel, accel_time=accel_time, equi_dist=equi_dist, repulse_max=repulse_max, repulse_spring=repulse_spring, align_frict=align_frict, align_slope=align_slope, align_min=align_min, wall_decay=wall_decay, wall_frict=wall_frict, wp_tolerance=wp_tolerance)
+        self.params = dict(formation=formation,population=population,flock_vel=flock_vel, accel_time=accel_time, equi_dist=equi_dist, repulse_max=repulse_max, repulse_spring=repulse_spring, align_frict=align_frict, align_slope=align_slope, align_min=align_min, wall_decay=wall_decay, wall_frict=wall_frict, form_shape=form_shape, form_track=form_track, form_decay=form_decay, wp_tolerance=wp_tolerance)
 
         # data collection for plots
-        self.datacollector = DataCollector(model_reporters={"Minimum Distance":minimum_distance, "Maximum Distance":maximum_distance, "Average Distance":average_distance, "Collisions":collisions})
+        self.datacollector = DataCollector(model_reporters={"Minimum Distance":minimum_distance, "Maximum Distance":maximum_distance, "Average Distance":average_distance, "Collisions":collisions, "Messags Distributed":messages_distributed, "Messags Centralized":messages_centralized})
 
         # execute agents sequentially in a random order
         self.schedule = RandomActivation(self)
@@ -80,11 +92,12 @@ class BoidFlockers(Model):
 
     def make_agents(self):
         '''
-        Create self.population agents, with random positions and starting headings.
+        Create self.population agents and place it at the center of the environment.
         '''
+        s = np.floor(np.sqrt(self.population))
         for i in range(self.population):
-            x = self.space.center[0] / 2.0 - self.population + 2 * i
-            y = self.space.center[1] / 2.0
+            x = self.space.center[0] - self.min_dist * s                             + 2 * self.min_dist * (i % s)
+            y = self.space.center[1] - self.min_dist * np.floor(self.population / s) + 2 * self.min_dist * np.floor(i / s)
             pos = np.array((x, y))
             velocity = np.array([0,1.0])
             boid = Boid(i, self, pos, velocity, self.vision, **self.params)

@@ -1,4 +1,5 @@
 import numpy as np
+from timeit import default_timer as timer
 
 from mesa import Agent
 
@@ -10,10 +11,10 @@ class Boid(Agent):
     The agent follows four behaviors to flock:
         Repulsion: avoiding getting too close to any other agent.
         Alignment: try to fly in the same direction as the neighbors.
-        Flocking: adjust speed to a pre defined value.
+        Formation: adjust velocity to stay in a predefined formation.
         Wall: repell from walls.
     '''
-    def __init__(self, unique_id, model, pos, velocity, vision, flock_vel, accel_time, equi_dist, repulse_max, repulse_spring, align_frict, align_slope, align_min, wall_decay, wall_frict, wp_tolerance):
+    def __init__(self, unique_id, model, pos, velocity, vision, formation, population, flock_vel, accel_time, equi_dist, repulse_max, repulse_spring, align_frict, align_slope, align_min, wall_decay, wall_frict, form_shape, form_track, form_decay, wp_tolerance):
         '''
         Create a new flocker agent.
 
@@ -23,6 +24,8 @@ class Boid(Agent):
             pos: Starting position.
             velocity: Initial velocity.
             vision: Radius to look around for nearby agents.
+            formation: Formation of the agents.
+            population: Number of agents.
             flock_vel: Target velocity of the flock (v_flock).
             accel_time: Characteristic time needed by the agent to reach the target velocity (tau).
             equi_dist: Equilibrium distance between agents (r_0).
@@ -33,6 +36,9 @@ class Boid(Agent):
             align_min: Minimum alignment between agents (r_1).
             wall_decay: Softness of wall as decay width (d).
             wall_frict: Bounding area viscous friction coefficient (C_shill).
+            form_shape: Strength of the shape forming velocity component (beta).
+            form_track: Strength of the tracking velocity component (alpha).
+            form_decay: Softness of shape (d).
             wp_tolerance: The distance to the current waypoint below which the next waypoint of the path is selected.
 
         '''
@@ -43,6 +49,8 @@ class Boid(Agent):
         self.pos = np.array(pos)
         self.velocity = velocity
         self.vision = vision
+        self.formation = formation
+        self.population = population
         self.flock_vel = flock_vel
         self.accel_time = accel_time
         self.equi_dist = equi_dist
@@ -53,6 +61,9 @@ class Boid(Agent):
         self.align_min = align_min
         self.wall_decay = wall_decay
         self.wall_frict = wall_frict
+        self.form_shape = form_shape
+        self.form_track = form_track
+        self.form_decay = form_decay
         self.wp_tolerance = wp_tolerance
 
         # area coordinates
@@ -65,11 +76,30 @@ class Boid(Agent):
     def step(self):
         '''
         Get the agent's neighbors, compute the new position, and move accordingly.
+        Assumption: 1 step = 1 s
         '''
-        neighbors = self.model.space.get_neighbors(self.pos, self.vision, False)
+        self.neighbors = self.model.space.get_neighbors(self.pos, self.vision, False)
 
-        # compute velocity for flocking of agents
-        self.velocity += 1 / self.accel_time * (self.flocking(neighbors) - self.velocity) + (self.repulsion(neighbors) + self.alignment(neighbors) + self.wall())
+        self.center = np.mean(np.array([n.pos for n in self.neighbors+[self]]), axis=0)
+
+        # select next waypoint if flock is close enough to or past current waypoint
+        self.coverage_waypoint()
+
+        # compute velocity for different formations
+        vel = 0
+        if self.formation == "Grid":
+            vel = self.formation_grid()
+        elif self.formation == "Ring":
+            vel = 0
+        elif self.formation == "Line":
+            vel = 0
+        elif self.formation == "Star":
+            vel = 0
+        else:
+            vel = self.flocking()
+
+        # total velocity for flocking of agents
+        self.velocity += 1 / self.accel_time * (vel - self.velocity) + (self.repulsion() + self.alignment() + self.wall())
 
         # compute new position
         new_pos = self.pos + self.velocity
@@ -77,28 +107,12 @@ class Boid(Agent):
         # move agent to new position
         self.model.space.move_agent(self, new_pos)
 
-    def alignment(self, neighbors):
+    def alignment(self):
         '''
         Compute acceleration to align velocities between agents.
         '''
-        # init alignment acceleration
-        a_alignment = np.zeros(2)
-
-        # compute damped velocity differences for all neighbors
-        for neighbor in neighbors:
-            # compute damping
-            damp = max(self.model.space.get_distance(self.pos, neighbor.pos) - (self.equi_dist - self.align_slope), self.align_min) ** 2
-
-            # compute velocity difference
-            velocity = neighbor.velocity - self.velocity
-
-            # sum up damped velocity difference
-            a_alignment += velocity / damp
-
-        # apply friction coefficient
-        a_alignment *= self.align_frict
-
-        return a_alignment
+        dist = self.equi_dist - self.align_slope
+        return self.align_frict * sum([(n.velocity - self.velocity) / max(self.model.space.get_distance(self.pos, n.pos) - dist, self.align_min) ** 2 for n in self.neighbors])
 
     def coverage_path(self):
         '''
@@ -109,27 +123,39 @@ class Boid(Agent):
         y1 = self.model.space.center[1] / 2.0
         y2 = self.model.space.center[1] * 3.0 / 2.0
 
+        # current waypoint
         self.wp = 0
+
+        # wait a few iterations before selecting next waypoint to be synchronized with all agents
+        self.wp_delay = 2
 
         return np.array([[x1, y1], [x1, y2], [x2, y2], [x2, y1]])
 
-    def coverage_velocity(self, neighbors):
+    def coverage_velocity(self):
         '''
         Compute velocity to reach the next waypoint of the coverage path.
         '''
+        # return vector pointing towards next waypoint
+        return self.model.space.get_heading(self.pos, self.path[self.wp])
+
+    def coverage_waypoint(self):
+        '''
+        Select the next waypoint of the coverage path if the swarm is close or past the current one.
+        '''
         # compute flock centroid
-        flock = np.mean(np.array([n.pos for n in neighbors]), axis=0)
+        flock = np.mean(np.array([n.pos for n in self.neighbors+[self]]), axis=0)
 
         # select next waypoint if flock is close enough to or past current waypoint
-        if self.model.space.get_distance(flock, self.path[self.wp]) < self.wp_tolerance or self.model.space.get_distance(flock, self.path[(self.wp+1)%len(self.path)]) < self.model.space.get_distance(flock, self.path[self.wp]):
-            self.wp += 1
+        if self.model.space.get_distance(flock, self.path[self.wp]) < self.wp_tolerance:
+            if self.wp_delay > 0:
+                self.wp_delay -= 1
+            else:
+                self.wp_delay = 2
+                self.wp += 1
 
         # repeat path
         if self.wp >= len(self.path):
             self.wp = self.wp % len(self.path)
-
-        # return vector pointing towards next waypoint
-        return self.model.space.get_heading(self.pos, self.path[self.wp])
 
     def dist_bound(self):
         '''
@@ -160,36 +186,74 @@ class Boid(Agent):
 
         return dist
 
-    def flocking(self, neighbors):
+    def flocking(self):
         '''
         Compute velocity that allows agents to stay in the flock.
         '''
-        velocity = self.coverage_velocity(neighbors)
-        #print(velocity)
+        velocity = self.coverage_velocity()
         return self.flock_vel * velocity / np.linalg.norm(velocity)
 
-    def repulsion(self, neighbors):
+    def formation_vel(self, pos, dist):
+        '''
+        Compute velocity to achieve a generic formation.
+
+        Args:
+            pos: The position which the agent tries to reach.
+            dist: The distance which the agent keeps from pos.
+        '''
+        shp_mag = np.linalg.norm(pos - self.pos)
+
+        # compute shape velocity
+        v_shp = np.zeros(2)
+        if shp_mag > 0.01:
+            tf_shp = self.transfer(shp_mag, dist, self.form_decay)
+            v_shp = self.form_shape * self.flock_vel * tf_shp * (pos - self.pos) / shp_mag
+
+        # compute distance between center of mass and target
+        x_com = self.path[self.wp] - self.center
+        com_mag = np.linalg.norm(x_com)
+
+        # compute target tracking velocity
+        v_trg = np.zeros(2)
+        if com_mag > 0.01:
+            tf_track = self.transfer(com_mag, dist, self.form_decay)
+            v_trg = self.form_track * self.flock_vel * tf_track * x_com / com_mag
+
+        # combine velocities
+        v_formation = v_shp + v_trg
+        vel_mag = np.linalg.norm(v_formation)
+        if vel_mag > self.flock_vel:
+            v_formation *= self.flock_vel / vel_mag
+
+        return v_formation
+
+
+    def formation_grid(self):
+        '''
+        Compute velocity that allows agents to form a grid.
+        '''
+        # circle packing, use function fitted from data available at http://hydra.nat.uni-magdeburg.de/packing/cci/cci.html
+        dist = self.equi_dist / 2 * 0.8135 * self.population**-0.4775 - self.equi_dist / 2
+
+        return self.formation_vel(self.center, dist)
+
+    def potentials(self):
+        '''
+        Compute pair potentials between neighbors.
+        '''
+        for n in self.neighbors:
+            dist = self.model.space.get_distance(self.pos, n.pos)
+            if dist < self.equi_dist:
+                yield min(self.repulse_max, self.equi_dist - dist) * self.model.space.get_heading(self.pos, n.pos) / dist
+
+    def repulsion(self):
         '''
         Compute acceleration from repulsive forces between agents.
+
+        Returns:
+            The acceleration that lets the agents repulse from each other.
         '''
-        # helper variables
-        me = self.pos
-        them = (n.pos for n in neighbors)
-
-        # init repulsive force acceleration
-        a_repulsion = np.zeros(2)
-
-        # compute pair potentials for all neighbors
-        for other in them:
-            # repulsion only from close neighbors
-            if self.model.space.get_distance(me, other) < self.equi_dist:
-                # sum up pair potential
-                a_repulsion += min(self.repulse_max, self.equi_dist - self.model.space.get_distance(me, other)) * self.model.space.get_heading(me, other) / self.model.space.get_distance(me, other)
-
-        # apply spring constant
-        a_repulsion *= -self.repulse_spring
-
-        return a_repulsion
+        return -self.repulse_spring * sum(list(self.potentials()))
 
     def transfer(self, x, r, d):
         '''
