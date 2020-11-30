@@ -1,5 +1,6 @@
+#!/bin/python3
+
 import numpy as np
-from timeit import default_timer as timer
 
 from mesa import Agent
 

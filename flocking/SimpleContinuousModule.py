@@ -1,3 +1,5 @@
+#!/bin/python3
+
 from mesa.visualization.ModularVisualization import VisualizationElement
 
 

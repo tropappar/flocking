@@ -20,7 +20,7 @@ git clone https://github.com/tropappar/flocking.git
 Install requirements:
 ```shell
 cd flocking
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ### Run

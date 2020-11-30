@@ -1,9 +1,11 @@
+#!/bin/python3
+
 from mesa.visualization.ModularVisualization import ModularServer
 from mesa.visualization.modules import ChartModule
 from mesa.visualization.UserParam import UserSettableParameter
 
-from .SimpleContinuousModule import SimpleCanvas
-from .model import BoidFlockers
+from flocking.SimpleContinuousModule import SimpleCanvas
+from flocking.model import BoidFlockers
 
 
 def boid_draw(agent):

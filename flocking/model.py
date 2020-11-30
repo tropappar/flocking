@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import numpy as np
 import itertools as it
 
@@ -5,8 +7,9 @@ from mesa import Model
 from mesa.space import ContinuousSpace
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
+from mesa.batchrunner import BatchRunner
 
-from .agent import Boid
+from flocking.agent import Boid
 
 def minimum_distance(model):
     '''
