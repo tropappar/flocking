@@ -68,7 +68,8 @@ class Boid(Agent):
         self.wp_tolerance = wp_tolerance
 
         # area coordinates
-        self.coords = np.array([[self.model.space.x_min,self.model.space.y_min], [self.model.space.x_max,self.model.space.y_min], [self.model.space.x_max,self.model.space.y_max], [self.model.space.x_min,self.model.space.y_max]])
+        # TODO: use cell count
+        self.coords = np.array([[0,0], [self.model.width,0], [self.model.width,self.model.height], [0,self.model.height]])
 
         # generate coverage path
         self.path = self.coverage_path()
@@ -103,6 +104,7 @@ class Boid(Agent):
         self.velocity += 1 / self.accel_time * (vel - self.velocity) + (self.repulsion() + self.alignment() + self.wall())
 
         # compute new position
+        # TODO: discretize
         new_pos = self.pos + self.velocity
 
         # move agent to new position
@@ -113,16 +115,16 @@ class Boid(Agent):
         Compute acceleration to align velocities between agents.
         '''
         dist = self.equi_dist - self.align_slope
-        return self.align_frict * sum([(n.velocity - self.velocity) / max(self.model.space.get_distance(self.pos, n.pos) - dist, self.align_min) ** 2 for n in self.neighbors])
+        return self.align_frict * sum([(n.velocity - self.velocity) / max(self.model.space.get_distance(self.pos, n.pos) - dist, self.align_min) ** 2 for n in self.neighbors]) # TODO: replace function
 
     def coverage_path(self):
         '''
         Generate a path that allows the flock to sweep the area.
         '''
-        x1 = self.model.space.center[0] / 2.0
-        x2 = self.model.space.center[0] * 3.0 / 2.0
-        y1 = self.model.space.center[1] / 2.0
-        y2 = self.model.space.center[1] * 3.0 / 2.0
+        x1 = self.model.center[0] / 2.0
+        x2 = self.model.center[0] * 3.0 / 2.0
+        y1 = self.model.center[1] / 2.0
+        y2 = self.model.center[1] * 3.0 / 2.0
 
         # current waypoint
         self.wp = 0
@@ -137,7 +139,7 @@ class Boid(Agent):
         Compute velocity to reach the next waypoint of the coverage path.
         '''
         # return vector pointing towards next waypoint
-        return self.model.space.get_heading(self.pos, self.path[self.wp])
+        return self.model.space.get_heading(self.pos, self.path[self.wp]) # TODO: replace function
 
     def coverage_waypoint(self):
         '''
@@ -147,7 +149,7 @@ class Boid(Agent):
         flock = np.mean(np.array([n.pos for n in self.neighbors+[self]]), axis=0)
 
         # select next waypoint if flock is close enough to or past current waypoint
-        if self.model.space.get_distance(flock, self.path[self.wp]) < self.wp_tolerance:
+        if self.model.space.get_distance(flock, self.path[self.wp]) < self.wp_tolerance: # TODO: replace function
             if self.wp_delay > 0:
                 self.wp_delay -= 1
             else:
@@ -166,7 +168,7 @@ class Boid(Agent):
         dist = 0.0
 
         # coordinates of line segment from center to pose
-        p1 = self.model.space.center
+        p1 = self.model.center
         p2 = self.pos
 
         # find boundary that yields closest intersection point (i.e. the correct boundary)
@@ -182,8 +184,8 @@ class Boid(Agent):
                 p[1] = ((p1[0]*p2[1] - p1[1]*p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0]*p4[1] - p3[1]*p4[0])) / ((p1[0] - p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0] - p4[0]))
 
             # found closer point
-            if self.model.space.get_distance(self.model.space.center, p) < dist or dist == 0.0:
-                dist = self.model.space.get_distance(self.model.space.center, p)
+            if self.model.space.get_distance(self.model.center, p) < dist or dist == 0.0: # TODO: replace function
+                dist = self.model.space.get_distance(self.model.center, p) # TODO: replace function
 
         return dist
 
@@ -243,9 +245,9 @@ class Boid(Agent):
         Compute pair potentials between neighbors.
         '''
         for n in self.neighbors:
-            dist = self.model.space.get_distance(self.pos, n.pos)
+            dist = self.model.space.get_distance(self.pos, n.pos) # TODO: replace function
             if dist < self.equi_dist:
-                yield min(self.repulse_max, self.equi_dist - dist) * self.model.space.get_heading(self.pos, n.pos) / dist
+                yield min(self.repulse_max, self.equi_dist - dist) * self.model.space.get_heading(self.pos, n.pos) / dist # TODO: replace function
 
     def repulsion(self):
         '''
@@ -281,7 +283,7 @@ class Boid(Agent):
         Compute acceleration from repulsive forces of bounding virtual walls, i.e., environment boundaries.
         '''
         # distance to center
-        center_dist = self.model.space.center - self.pos
+        center_dist = self.model.center - self.pos
 
         # distance to wall
         wall_dist = self.dist_bound()

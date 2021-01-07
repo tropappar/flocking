@@ -4,7 +4,7 @@ import numpy as np
 import itertools as it
 
 from mesa import Model
-from mesa.space import ContinuousSpace
+from mesa.space import MultiGrid
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 from mesa.batchrunner import BatchRunner
@@ -64,7 +64,10 @@ class BoidFlockers(Model):
         '''
         # set parameters
         self.population = population
-        self.space = ContinuousSpace(width, height, torus=False)
+        self.center = np.array((np.round(width/2.0), np.round(height/2.0)))
+        self.width = width
+        self.height = height
+        self.space = MultiGrid(width, height, torus=False)
         self.vision = vision
         self.min_dist = min_dist
         self.params = dict(formation=formation,population=population,flock_vel=flock_vel, accel_time=accel_time, equi_dist=equi_dist, repulse_max=repulse_max, repulse_spring=repulse_spring, align_frict=align_frict, align_slope=align_slope, align_min=align_min, wall_decay=wall_decay, wall_frict=wall_frict, form_shape=form_shape, form_track=form_track, form_decay=form_decay, wp_tolerance=wp_tolerance)
@@ -91,7 +94,7 @@ class BoidFlockers(Model):
         '''
         Compute the pairwise distances between all agents.
         '''
-        self.density = [self.space.get_distance(pair[0].pos, pair[1].pos) for pair in it.combinations(self.schedule.agent_buffer(), 2)]
+        self.density = [self.space.get_distance(pair[0].pos, pair[1].pos) for pair in it.combinations(self.schedule.agent_buffer(), 2)] # TODO: replace get_distance
 
     def make_agents(self):
         '''
@@ -99,8 +102,9 @@ class BoidFlockers(Model):
         '''
         s = np.floor(np.sqrt(self.population))
         for i in range(self.population):
-            x = self.space.center[0] - self.min_dist * s                             + 2 * self.min_dist * (i % s)
-            y = self.space.center[1] - self.min_dist * np.floor(self.population / s) + 2 * self.min_dist * np.floor(i / s)
+            # TODO: discretize
+            x = self.center[0] - self.min_dist * s                             + 2 * self.min_dist * (i % s)
+            y = self.center[1] - self.min_dist * np.floor(self.population / s) + 2 * self.min_dist * np.floor(i / s)
             pos = np.array((x, y))
             velocity = np.array([0,1.0])
             boid = Boid(i, self, pos, velocity, self.vision, **self.params)

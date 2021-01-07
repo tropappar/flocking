@@ -1,10 +1,9 @@
 #!/bin/python3
 
 from mesa.visualization.ModularVisualization import ModularServer
-from mesa.visualization.modules import ChartModule
+from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.UserParam import UserSettableParameter
 
-from flocking.SimpleContinuousModule import SimpleCanvas
 from flocking.model import BoidFlockers
 
 
@@ -12,11 +11,14 @@ def boid_draw(agent):
     return {"Shape": "circle", "r": 1, "Filled": "true", "Color": "Red"}
     #return {"Shape": "arrowHead", "scale": 2, "heading_x": agent.velocity[0], "heading_y": agent.velocity[1], "Filled": "true", "Color": "Red"}
 
+width = 100
+height = 100
+
 model_params = {
     "formation":      UserSettableParameter("choice", value="Grid", choices=["Flock", "Grid", "Ring", "Line", "Star"], name="formation", description="Formation in which the agents move."),
     "population":     UserSettableParameter("slider", value=30,  min_value=1,    max_value=256, step=1,    name="population size", description="Number of agents in the flock."),
-    "width":          100,
-    "height":         100,
+    "width":          width,
+    "height":         height,
     "vision":         UserSettableParameter("slider", value=50,  min_value=1,    max_value=150, step=1,    name="interaction range", description="The range within which agents interact."),
     "min_dist":       UserSettableParameter("slider", value=1,   min_value=0.1,  max_value=10,  step=0.1,  name="minimum distance", description="Minimum allowed distance between agents before a collision occurs. This is only used for statistics."),
     "flock_vel":      UserSettableParameter("slider", value=1,   min_value=0.1,  max_value=10,  step=0.1,  name="v<sub>flock</sub>: flock velocity", description="Target velocity of the flock."),
@@ -35,7 +37,7 @@ model_params = {
     "wp_tolerance":   UserSettableParameter("slider", value=10,  min_value=1,    max_value=100, step=1,    name="waypoint tolerance", description="The distance to the current waypoint below which the next waypoint of the path is selected."),
 }
 
-boid_canvas = SimpleCanvas(boid_draw, 750, 750)
+boid_canvas = CanvasGrid(boid_draw, width, height, 750, 750)
 
 boid_messages = ChartModule([{"Label":"Messags Distributed", "Color":"Green"}, {"Label":"Messags Centralized", "Color":"Red"}])
 boid_distance = ChartModule([{"Label":"Minimum Distance", "Color":"Red"}, {"Label":"Maximum Distance", "Color":"Green"}, {"Label":"Average Distance", "Color":"Black"}])
