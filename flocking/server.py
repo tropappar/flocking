@@ -8,7 +8,7 @@ from flocking.model import BoidFlockers
 
 
 def boid_draw(agent):
-    return {"Shape": "circle", "r": 1, "Filled": "true", "Color": "Red"}
+    return {"Shape": "circle", "r": 1, "Filled": "true", "Color": "Red", "Layer": 1}
     #return {"Shape": "arrowHead", "scale": 2, "heading_x": agent.velocity[0], "heading_y": agent.velocity[1], "Filled": "true", "Color": "Red"}
 
 width = 100

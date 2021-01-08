@@ -68,8 +68,7 @@ class Boid(Agent):
         self.wp_tolerance = wp_tolerance
 
         # area coordinates
-        # TODO: use cell count
-        self.coords = np.array([[0,0], [self.model.width,0], [self.model.width,self.model.height], [0,self.model.height]])
+        self.coords = np.array([[0,0], [self.model.size[0],0], [self.model.size[0],self.model.size[1]], [0,self.model.size[1]]])
 
         # generate coverage path
         self.path = self.coverage_path()
@@ -80,7 +79,7 @@ class Boid(Agent):
         Get the agent's neighbors, compute the new position, and move accordingly.
         Assumption: 1 step = 1 s
         '''
-        self.neighbors = self.model.space.get_neighbors(self.pos, self.vision, False)
+        self.neighbors = self.model.grid.get_neighbors(self.pos, self.vision, False)
 
         self.center = np.mean(np.array([n.pos for n in self.neighbors+[self]]), axis=0)
 
@@ -104,18 +103,17 @@ class Boid(Agent):
         self.velocity += 1 / self.accel_time * (vel - self.velocity) + (self.repulsion() + self.alignment() + self.wall())
 
         # compute new position
-        # TODO: discretize
-        new_pos = self.pos + self.velocity
+        new_pos = tuple(np.round(self.pos + self.velocity).astype(int))
 
         # move agent to new position
-        self.model.space.move_agent(self, new_pos)
+        self.model.grid.move_agent(self, new_pos)
 
     def alignment(self):
         '''
         Compute acceleration to align velocities between agents.
         '''
         dist = self.equi_dist - self.align_slope
-        return self.align_frict * sum([(n.velocity - self.velocity) / max(self.model.space.get_distance(self.pos, n.pos) - dist, self.align_min) ** 2 for n in self.neighbors]) # TODO: replace function
+        return self.align_frict * sum([(n.velocity - self.velocity) / max(self.model.get_distance(self.pos, n.pos) - dist, self.align_min) ** 2 for n in self.neighbors])
 
     def coverage_path(self):
         '''
@@ -139,7 +137,7 @@ class Boid(Agent):
         Compute velocity to reach the next waypoint of the coverage path.
         '''
         # return vector pointing towards next waypoint
-        return self.model.space.get_heading(self.pos, self.path[self.wp]) # TODO: replace function
+        return self.model.get_heading(self.pos, self.path[self.wp])
 
     def coverage_waypoint(self):
         '''
@@ -149,7 +147,7 @@ class Boid(Agent):
         flock = np.mean(np.array([n.pos for n in self.neighbors+[self]]), axis=0)
 
         # select next waypoint if flock is close enough to or past current waypoint
-        if self.model.space.get_distance(flock, self.path[self.wp]) < self.wp_tolerance: # TODO: replace function
+        if self.model.get_distance(flock, self.path[self.wp]) < self.wp_tolerance:
             if self.wp_delay > 0:
                 self.wp_delay -= 1
             else:
@@ -184,8 +182,8 @@ class Boid(Agent):
                 p[1] = ((p1[0]*p2[1] - p1[1]*p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0]*p4[1] - p3[1]*p4[0])) / ((p1[0] - p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0] - p4[0]))
 
             # found closer point
-            if self.model.space.get_distance(self.model.center, p) < dist or dist == 0.0: # TODO: replace function
-                dist = self.model.space.get_distance(self.model.center, p) # TODO: replace function
+            if self.model.get_distance(self.model.center, p) < dist or dist == 0.0:
+                dist = self.model.get_distance(self.model.center, p)
 
         return dist
 
@@ -245,9 +243,9 @@ class Boid(Agent):
         Compute pair potentials between neighbors.
         '''
         for n in self.neighbors:
-            dist = self.model.space.get_distance(self.pos, n.pos) # TODO: replace function
+            dist = self.model.get_distance(self.pos, n.pos)
             if dist < self.equi_dist:
-                yield min(self.repulse_max, self.equi_dist - dist) * self.model.space.get_heading(self.pos, n.pos) / dist # TODO: replace function
+                yield min(self.repulse_max, self.equi_dist - dist) * self.model.get_heading(self.pos, n.pos) / dist
 
     def repulsion(self):
         '''
