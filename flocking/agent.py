@@ -182,8 +182,8 @@ class Boid(Agent):
                 p[1] = ((p1[0]*p2[1] - p1[1]*p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0]*p4[1] - p3[1]*p4[0])) / ((p1[0] - p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0] - p4[0]))
 
             # found closer point
-            if self.model.space.get_distance(self.model.space.center, p) < dist or dist == 0.0:
-                dist = self.model.space.get_distance(self.model.space.center, p)
+            if self.model.space.get_distance(p2, p) < dist or dist == 0.0:
+                dist = self.model.space.get_distance(p2, p)
 
         return dist
 
