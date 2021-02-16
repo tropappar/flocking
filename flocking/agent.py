@@ -160,8 +160,11 @@ class Boid(Agent):
 
     def dist_bound(self):
         '''
-        Compute the distance of the area bound to the coordinate system origin. A rectangular area is assumed. Returns the distance between origin and the point on the area bound where the line from origin through the current agent pose intersects.
+        Compute the distance of the area bound to the coordinate system origin. Returns the distance between origin and the point on the area bound where the line from origin through the current agent pose intersects.
         '''
+        # point on boundary
+        bound = np.zeros(2)
+
         # distance of point from origin
         dist = 0.0
 
@@ -169,7 +172,7 @@ class Boid(Agent):
         p1 = self.model.space.center
         p2 = self.pos
 
-        # find boundary that yields closest intersection point (i.e. the correct boundary)
+        # find boundary that yields closest intersection point to the agent (i.e. the correct boundary)
         for i in range(0,len(self.coords)):
             # coordinates of boundary
             p3 = self.coords[i]
@@ -184,8 +187,9 @@ class Boid(Agent):
             # found closer point
             if self.model.space.get_distance(p2, p) < dist or dist == 0.0:
                 dist = self.model.space.get_distance(p2, p)
+                bound = p
 
-        return dist
+        return self.model.space.get_distance(p1, bound)
 
     def flocking(self):
         '''
