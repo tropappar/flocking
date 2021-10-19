@@ -6,18 +6,28 @@ var ContinuousVisualization = function(height, width, context) {
 	this.draw = function(objects) {
 		for (var i in objects) {
 			var p = objects[i];
-			if (p.Shape == "rect")
-				this.drawRectange(p.x, p.y, p.w, p.h, p.Color, p.Filled);
-			if (p.Shape == "circle")
-				this.drawCircle(p.x, p.y, p.r, p.Color, p.Filled);
+			this.drawCircle(p.x, p.y, p.r, p.Color, p.Filled);
 		};
 
 	};
 
+	// DRAWING METHODS
+	// =====================================================================
+
+	/**
+	Draw a circle in the specified grid cell.
+	x, y: Grid coords
+	r: Radius, as a multiple of cell size
+	colors: List of colors for the gradient. Providing only one color will fill the shape with only that color, not gradient.
+	stroke_color: Color to stroke the shape
+	fill: Boolean for whether or not to fill the circle.
+	text: Inscribed text in rectangle.
+	text_color: Color of the inscribed text.
+	*/
 	this.drawCircle = function(x, y, radius, color, fill) {
 		var cx = x * width;
 		var cy = y * height;
-		var r = radius;
+		var r = radius * width;
 
 		context.beginPath();
 		context.arc(cx, cy, r, 0, Math.PI * 2, false);
@@ -33,30 +43,14 @@ var ContinuousVisualization = function(height, width, context) {
 
 	};
 
-	this.drawRectange = function(x, y, w, h, color, fill) {
-		context.beginPath();
-		var dx = w * width;
-		var dy = h * height;
-
-		// Keep the drawing centered:
-		var x0 = (x*width) - 0.5*dx;
-		var y0 = (y*height) - 0.5*dy;
-
-		context.strokeStyle = color;
-		context.fillStyle = color;
-		if (fill)
-			context.fillRect(x0, y0, dx, dy);
-		else
-			context.strokeRect(x0, y0, dx, dy);
-	};
-
 	this.resetCanvas = function() {
 		context.clearRect(0, 0, height, width);
 		context.beginPath();
 	};
 };
 
-var Simple_Continuous_Module = function(canvas_width, canvas_height) {
+
+var Continuous_Module = function(canvas_width, canvas_height) {
 	// Create the element
 	// ------------------
 
@@ -79,5 +73,4 @@ var Simple_Continuous_Module = function(canvas_width, canvas_height) {
 	this.reset = function() {
 		canvasDraw.resetCanvas();
 	};
-
 };

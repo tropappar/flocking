@@ -1,5 +1,5 @@
 #!/bin/python3
 
-from flocking.server import server
+from swarm.server import server
 
 server.launch()
