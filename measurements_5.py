@@ -5,33 +5,23 @@ import numpy as np
 from mesa.batchrunner import BatchRunner
 from mesa.datacollection import DataCollector
 
-from flocking.model import BoidFlockers
+from swarm.model import Swarm
 
 
 params_variable = {
-    "vision":         range(6, 61, 6),
-    "population":     range(2, 149, 10),
+    "population": range(10, 101, 10),
 }
 
 params_fixed = {
-    "formation":      "Grid",
-    "width":          100,
-    "height":         100,
-    "min_dist":       1,
-    "flock_vel":      1,
-    "accel_time":     1,
-    "equi_dist":      5,
-    "repulse_max":    10,
-    "repulse_spring": 0.5,
-    "align_frict":    0.3,
-    "align_slope":    30,
-    "align_min":      0.1,
-    "wall_decay":     10,
-    "wall_frict":     1,
-    "form_shape":     1,
-    "form_track":     1,
-    "form_decay":     10,
-    "wp_tolerance":   10,
+    "interaction_range":      50,
+    "debug":                  False,
+    "targets":                1,
+    "show_interaction_range": False,
+    "vision_range":           1,
+    "show_vision_range":      False,
+    "help_range":             1,
+    "min_agents":             1,
+    "max_agents":             1,
 }
 
 
@@ -40,7 +30,7 @@ if __name__ == "__main__":
     iterations = 3
 
     # run simulations
-    batch_run = BatchRunner(BoidFlockers, params_variable, params_fixed, iterations=iterations, max_steps=250, model_reporters={"Data Collector": lambda m: m.datacollector})
+    batch_run = BatchRunner(Swarm, params_variable, params_fixed, iterations=iterations, max_steps=250, model_reporters={"Data Collector": lambda m: m.datacollector})
     batch_run.run_all()
 
     # get data of simulation runs
@@ -76,6 +66,4 @@ if __name__ == "__main__":
     # df_agg.to_csv("data/aggregated.csv")
 
     # write number of messages to text files
-    for r in params_variable["vision"]:
-        df_n = df_agg.loc[r]
-        df_n["Messags Centralized"].to_csv("data/abstract_messages_centralized_{0}.txt".format(r), sep=" ", index_label=["n"], header=["m"])
+    df_agg["Messags Centralized"].to_csv("data/abstract_messages_centralized_{0}.txt".format(50), sep=" ", index_label=["n"], header=["m"])
